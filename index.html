@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG Fixer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <svg width="32" height="36" viewBox="0 0 28 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 1h15l9 9v20a1 1 0 01-1 1H2a1 1 0 01-1-1V2a1 1 0 011-1z" fill="#0a0c10" stroke="#22d3ee"
+            stroke-width="1.5" />
+          <path d="M17 1v8a1 1 0 001 1h8" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-linejoin="round" />
+          <text x="14" y="23" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="7.5"
+            font-weight="700" fill="#22d3ee">.svg</text>
+        </svg>
+      </div>
+      <div class="header-text">
+        <h1>SVG Fixer</h1>
+        <p>Fix broken SVG attributes for CMS upload</p>
+      </div>
+    </header>
+
+    <!-- Drop Zone -->
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="fileInput" accept=".svg" />
+      <div class="dropzone-icon">⬆</div>
+      <h3>Drop your SVG here</h3>
+      <p>or click to browse &middot; .svg files only</p>
+    </div>
+
+    <!-- Results -->
+    <div class="results" id="results">
+      <!-- File Info Bar -->
+      <div class="file-info">
+        <span class="file-name" id="fileName"></span>
+        <div class="file-actions">
+          <button class="btn" id="btnCopy" onclick="copyFixed()">&#128203; Copy Code</button>
+          <button class="btn btn-primary" id="btnDownload" onclick="downloadFixed()">&#11015; Download Fixed</button>
+          <button class="btn btn-reset" onclick="resetApp()">&#10005; Reset</button>
+        </div>
+      </div>
+
+      <!-- Report -->
+      <div class="report">
+        <div class="report-header">
+          <h3>&#128269; Analysis Report</h3>
+          <span class="report-badge" id="reportBadge"></span>
+        </div>
+        <div id="reportBody"></div>
+      </div>
+
+      <!-- Tabs: Preview / Code -->
+      <div class="tabs-container">
+        <div class="tabs-header">
+          <button class="tab-btn active" onclick="switchTab('preview', this)">Preview</button>
+          <button class="tab-btn" onclick="switchTab('code', this)">Fixed Code</button>
+          <button class="tab-btn" onclick="switchTab('original', this)">Original Code</button>
+        </div>
+        <div class="tab-content active" id="tab-preview">
+          <div class="preview-pane">
+            <div class="preview-box">
+              <span class="preview-label">Original</span>
+              <div id="previewOriginal"></div>
+            </div>
+            <div class="preview-box">
+              <span class="preview-label">Fixed</span>
+              <div id="previewFixed"></div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-content" id="tab-code">
+          <div class="code-view" id="codeFixed"></div>
+        </div>
+        <div class="tab-content" id="tab-original">
+          <div class="code-view" id="codeOriginal"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>
