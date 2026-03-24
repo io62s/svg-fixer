@@ -173,7 +173,7 @@ function runFixer(svgString) {
   const serializer = new XMLSerializer();
   fixedSVG = serializer.serializeToString(svg);
 
-  // Clean up XMLSerializer quirks
+  // Clean up XMLSerializer
   fixedSVG = cleanSerializedSVG(fixedSVG);
 
   showResults(issues);
@@ -208,14 +208,14 @@ function removeStyleProp(el, prop) {
 }
 
 function cleanSerializedSVG(str) {
-  // Remove duplicate xmlns declarations that XMLSerializer may add
+  // Remove duplicate xmlns declarations
   return str.replace(/ xmlns="http:\/\/www\.w3\.org\/2000\/svg"/g, (match, offset) => {
     return offset === str.indexOf(match) ? match : '';
   });
 }
 
 function textBasedFix(svgString, issues) {
-  // Fallback for malformed XML — do basic text-level fixes
+  // Fallback for malformed XML
   let fixed = svgString;
   if (!fixed.includes('xmlns=')) {
     fixed = fixed.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
@@ -239,6 +239,76 @@ function escapeHTML(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// ===================================================================
+//  SANITIZER 
+// ===================================================================
+
+const ELEMENTS = ['script', 'foreignObject', 'iframe', 'object', 'embed', 'use'];
+const ATTRS_REGEX = /^on/i;
+const HREF_REGEX = /^\s*javascript:/i;
+
+function sanitizeSVG(svgString) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svgString, 'image/svg+xml');
+  const svg = doc.documentElement;
+
+  if (doc.querySelector('parsererror')) {
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60"><text x="100" y="35" text-anchor="middle" fill="#8892a8" font-size="12" font-family="monospace">Preview unavailable</text></svg>';
+  }
+
+  ELEMENTS.forEach(tag => {
+    doc.querySelectorAll(tag).forEach(el => el.remove());
+  });
+
+
+  doc.querySelectorAll('*').forEach(el => {
+    const attrsToRemove = [];
+    for (const attr of el.attributes) {
+
+      if (ATTRS_REGEX.test(attr.name)) {
+        attrsToRemove.push(attr.name);
+      }
+
+      if ((attr.name === 'href' || attr.name === 'xlink:href') &&
+        HREF_REGEX.test(attr.value)) {
+        attrsToRemove.push(attr.name);
+      }
+    }
+    attrsToRemove.forEach(name => el.removeAttribute(name));
+  });
+
+  const serializer = new XMLSerializer();
+  return serializer.serializeToString(svg);
+}
+
+// ===================================================================
+//  SANDBOXED PREVIEW
+// ===================================================================
+
+function renderSandboxedPreview(container, svgString) {
+  // Clear previous content
+  container.innerHTML = '';
+
+  const cleanSVG = sanitizeSVG(svgString);
+
+  // Build a minimal HTML page with the SVG
+  const html = '<!DOCTYPE html><html><head><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:transparent;overflow:hidden}svg{max-width:100%;max-height:100%}</style></head><body>' + cleanSVG + '</body></html>';
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+
+  const iframe = document.createElement('iframe');
+  iframe.src = url;
+  iframe.sandbox = 'allow-same-origin';
+  iframe.style.cssText = 'width:100%;height:220px;border:none;background:transparent;';
+  iframe.setAttribute('loading', 'lazy');
+  iframe.setAttribute('title', 'SVG Preview');
+
+  iframe.onload = () => URL.revokeObjectURL(url);
+
+  container.appendChild(iframe);
 }
 
 // ===================================================================
@@ -280,14 +350,8 @@ function showResults(issues) {
   }
 
   // Preview
-  document.getElementById('previewOriginal').innerHTML = originalSVG;
-  document.getElementById('previewFixed').innerHTML = fixedSVG;
-
-  // Constrain rendered SVGs
-  document.querySelectorAll('.preview-box svg').forEach(svg => {
-    svg.style.maxWidth = '100%';
-    svg.style.maxHeight = '220px';
-  });
+  renderSandboxedPreview(document.getElementById('previewOriginal'), originalSVG);
+  renderSandboxedPreview(document.getElementById('previewFixed'), fixedSVG);
 
   // Code views
   document.getElementById('codeFixed').innerHTML = escapeHTML(formatXML(fixedSVG));
